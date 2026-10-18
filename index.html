@@ -1,0 +1,983 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Электронный дневник 11 класс</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, "Segoe UI", Roboto, sans-serif; background: #f0f2f5; color: #1a1a1a; padding: 16px; line-height: 1.4; }
+  .container { max-width: 1500px; margin: 0 auto; }
+  h1 { font-size: 20px; margin-bottom: 6px; }
+  
+  .top-bar { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-bottom: 14px; }
+  .period-badge { padding: 7px 14px; border-radius: 8px; font-weight: 600; font-size: 13px; background: #e0e7ff; color: #3730a3; }
+  .period-badge.holiday { background: #fef3c7; color: #92400e; }
+  .period-badge.exam { background: #fee2e2; color: #991b1b; }
+  .period-badge.off { background: #f3f4f6; color: #9ca3af; }
+  .datetime { font-size: 12px; color: #666; margin-right: auto; }
+
+  /* Навигация по вкладкам */
+  .nav-tabs { display: flex; gap: 8px; margin-bottom: 16px; border-bottom: 2px solid #e2e8f0; padding-bottom: 10px; flex-wrap: wrap; }
+  .nav-tab { padding: 8px 16px; background: none; border: none; font-size: 14px; font-weight: 600; color: #64748b; cursor: pointer; border-radius: 8px; transition: 0.15s; }
+  .nav-tab:hover { background: #e2e8f0; color: #1e293b; }
+  .nav-tab.active { background: #4f46e5; color: #fff; }
+
+  /* Дневник */
+  .quarter-tabs { display: flex; gap: 8px; margin-bottom: 16px; }
+  .q-tab { flex: 1; max-width: 100px; padding: 10px; border: 1.5px solid #d0d5dd; border-radius: 8px; background: #fff; font-weight: 600; color: #475569; cursor: pointer; transition: 0.15s; }
+  .q-tab.active { background: #4f46e5; border-color: #4f46e5; color: #fff; }
+  
+  .week-scroll { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 8px; margin-bottom: 16px; scroll-behavior: smooth; }
+  .week-scroll::-webkit-scrollbar { height: 6px; }
+  .week-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+  .week-btn { padding: 8px 12px; border: 1.5px solid #d0d5dd; border-radius: 6px; background: #fff; color: #475569; font-size: 12px; font-weight: 500; cursor: pointer; white-space: nowrap; transition: 0.15s; flex-shrink: 0; }
+  .week-btn.active { background: #0f172a; border-color: #0f172a; color: #fff; }
+  .week-btn.current-week { border-color: #3b82f6; box-shadow: 0 0 0 2px rgba(59,130,246,0.2); }
+
+  .diary-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; }
+  @media (max-width: 1000px) { .diary-grid { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 600px) { .diary-grid { grid-template-columns: 1fr; } }
+  
+  .day-card { background: #fff; border-radius: 12px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); overflow: hidden; display: flex; flex-direction: column; }
+  .day-header { padding: 10px 12px; background: #f8fafc; border-bottom: 1px solid #eef0f3; font-weight: 600; font-size: 13px; color: #475569; text-align: center; }
+  .day-header.today { background: #fef9c3; color: #854d0e; }
+  .day-body { padding: 10px; display: flex; flex-direction: column; gap: 8px; flex: 1; }
+  
+  .lesson-row { display: flex; flex-direction: column; gap: 4px; }
+  .lesson-name { font-size: 11px; font-weight: 600; color: #334155; line-height: 1.2; }
+  .lesson-input { width: 100%; padding: 6px; border: 1.5px solid #d0d5dd; border-radius: 6px; font-size: 13px; font-family: inherit; text-align: center; font-weight: 700; }
+  .lesson-input:focus { outline: none; border-color: #3b82f6; }
+  .lesson-input.has-grade { background: #f0fdf4; border-color: #22c55e; color: #166534; }
+  .lesson-input.dual { background: #eff6ff; border-color: #3b82f6; color: #1e40af; }
+  
+  /* Таблица */
+  .table-wrap { overflow-x: auto; border-radius: 12px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); display: none; }
+  table { width: 100%; border-collapse: collapse; background: #fff; }
+  th, td { padding: 8px 6px; text-align: center; font-size: 12px; border-bottom: 1px solid #eef0f3; }
+  th { background: #f8fafc; font-weight: 600; color: #475569; font-size: 11px; text-transform: uppercase; }
+  td:first-child, th:first-child { text-align: left; padding-left: 12px; font-weight: 500; min-width: 220px; }
+  tr:hover td:not(.current) { background: #fafbfc; }
+  th.current, td.current { background: #fef9c3 !important; }
+  .q-input { width: 100%; min-width: 60px; padding: 4px; border: 1.5px solid #d0d5dd; border-radius: 5px; text-align: center; font-size: 12px; }
+  .q-input:focus { outline: none; border-color: #3b82f6; }
+  
+  .summary { background: linear-gradient(135deg, #4f46e5, #7c3aed); color: #fff; border-radius: 14px; padding: 18px 20px; margin: 22px 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 14px; box-shadow: 0 4px 14px rgba(79,70,229,0.25); }
+  .summary-item { text-align: center; }
+  .summary-item .label { font-size: 10px; opacity: 0.85; text-transform: uppercase; margin-bottom: 5px; }
+  .summary-item .value { font-size: 26px; font-weight: 700; line-height: 1; }
+  .summary-item .sub { font-size: 10px; opacity: 0.75; margin-top: 3px; }
+  
+  .buttons { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 20px; }
+  button { padding: 10px 18px; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; font-family: inherit; transition: 0.15s; }
+  .btn-export { background: #dbeafe; color: #1e40af; }
+  .btn-import { background: #d1fae5; color: #065f46; }
+  .btn-reset { background: #fee2e2; color: #991b1b; }
+  .btn-theme { background: #f1f5f9; color: #334155; padding: 7px 12px; border-radius: 8px; font-size: 16px; cursor: pointer; }
+  
+  .an-section { background: #fff; border-radius: 12px; padding: 18px; margin-bottom: 14px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+  .an-empty { text-align: center; color: #94a3b8; padding: 24px; font-size: 13px; }
+  
+  #analytics, #archive { display: none; margin-top: 22px; }
+  .an-tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 16px; }
+  .an-tab { padding: 8px 16px; border-radius: 8px; border: 1.5px solid #d0d5dd; background: #fff; color: #475569; font-size: 13px; font-weight: 600; cursor: pointer; }
+  .an-tab.active { background: #4f46e5; border-color: #4f46e5; color: #fff; }
+  .pie-legend-item { display: flex; align-items: center; gap: 8px; font-size: 13px; margin-bottom: 4px; }
+  .pie-dot { width: 12px; height: 12px; border-radius: 50%; }
+  .bar-row { display: flex; align-items: center; gap: 10px; font-size: 12px; margin-bottom: 6px; }
+  .bar-label { width: 200px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .bar-track { flex: 1; height: 22px; background: #f1f5f9; border-radius: 5px; overflow: hidden; }
+  .bar-fill { height: 100%; display: flex; align-items: center; justify-content: flex-end; padding-right: 8px; color: #fff; font-size: 11px; font-weight: 700; }
+
+  /* Тёмная тема */
+  body.dark { background: #0f172a; color: #e2e8f0; }
+  body.dark .nav-tab { color: #94a3b8; } body.dark .nav-tab:hover { background: #1e293b; color: #fff; } body.dark .nav-tab.active { background: #4f46e5; color: #fff; }
+  body.dark .q-tab, body.dark .week-btn { background: #1e293b; border-color: #334155; color: #cbd5e1; }
+  body.dark .q-tab.active, body.dark .week-btn.active { background: #6366f1; border-color: #6366f1; color: #fff; }
+  body.dark .week-btn.current-week { border-color: #60a5fa; }
+  body.dark .day-card { background: #1e293b; } body.dark .day-header { background: #0f172a; border-bottom-color: #334155; color: #cbd5e1; }
+  body.dark .day-header.today { background: #423a0e; color: #fde68a; }
+  body.dark .lesson-name { color: #e2e8f0; } body.dark .lesson-input { background: #0f172a; border-color: #475569; color: #e2e8f0; }
+  body.dark .lesson-input.has-grade { background: #064e3b; border-color: #10b981; color: #6ee7b7; } body.dark .lesson-input.dual { background: #1e3a8a; border-color: #3b82f6; color: #bfdbfe; }
+  body.dark .table-wrap table { background: #1e293b; } body.dark th { background: #0f172a; color: #cbd5e1; } body.dark th, body.dark td { border-bottom-color: #334155; }
+  body.dark .q-input { background: #0f172a; color: #e2e8f0; border-color: #475569; }
+  body.dark .an-section { background: #1e293b; } body.dark .bar-track { background: #0f172a; }
+  body.dark .an-tab { background: #1e293b; border-color: #475569; color: #cbd5e1; } body.dark .an-tab.active { background: #6366f1; border-color: #6366f1; color: #fff; }
+  body.dark .no-schedule { background: #1e293b; color: #94a3b8; }
+
+  /* Печать PDF */
+  @media print {
+    body * { visibility: hidden; }
+    #print-area, #print-area * { visibility: visible; }
+    #print-area { position: absolute; left: 0; top: 0; width: 100%; padding: 20px; background: white; color: black; }
+    .print-header { text-align: center; margin-bottom: 20px; }
+    .print-header h2 { margin: 0; font-size: 24px; }
+    .print-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+    .print-table th, .print-table td { border: 1px solid #000; padding: 8px; text-align: center; font-size: 14px; }
+    .print-table th { background: #f0f0f0; }
+    .print-footer { margin-top: 30px; text-align: right; font-size: 12px; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>📊 Электронный дневник 11 класс</h1>
+  
+  <div class="top-bar">
+    <div class="period-badge" id="periodBadge">Загрузка…</div>
+    <div class="datetime" id="datetime"></div>
+    <button class="btn-theme" id="themeToggle" onclick="toggleTheme()">🌙</button>
+  </div>
+
+  <div class="nav-tabs">
+    <button class="nav-tab active" onclick="switchTab('diary')">📅 Дневник</button>
+    <button class="nav-tab" onclick="switchTab('table')">📊 Итоги</button>
+    <button class="nav-tab" onclick="switchTab('analytics')">📈 Аналитика</button>
+    <button class="nav-tab" onclick="switchTab('archive')">📚 Архив</button>
+  </div>
+
+  <!-- ЭКРАН 1: ДНЕВНИК -->
+  <div id="tab-diary" style="display: block;">
+    <div class="quarter-tabs">
+      <button class="q-tab active" data-q="1" onclick="selectQuarter(1)">I</button>
+      <button class="q-tab" data-q="2" onclick="selectQuarter(2)">II</button>
+      <button class="q-tab" data-q="3" onclick="selectQuarter(3)">III</button>
+      <button class="q-tab" data-q="4" onclick="selectQuarter(4)">IV</button>
+    </div>
+    <div class="week-scroll" id="weekScroll"></div>
+    <div class="diary-grid" id="diaryGrid"></div>
+  </div>
+
+  <!-- ЭКРАН 2: ТАБЛИЦА -->
+  <div id="tab-table" style="display: none;">
+    <div class="table-wrap" style="display: block;">
+      <table id="mainTable">
+        <thead>
+          <tr>
+            <th>Предмет</th><th>1 четв.</th><th>2 четв.</th><th>3 четв.</th><th>4 четв.</th><th>Годовая</th><th>ЦЭ</th><th>Итоговая</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody"></tbody>
+      </table>
+    </div>
+    <div class="summary" id="summary"></div>
+  </div>
+
+  <!-- ЭКРАН 3: АНАЛИТИКА -->
+  <div id="tab-analytics">
+    <div class="an-tabs">
+      <button class="an-tab active" data-q="1" onclick="selectAnalyticsQ(1)">1 четв.</button>
+      <button class="an-tab" data-q="2" onclick="selectAnalyticsQ(2)">2 четв.</button>
+      <button class="an-tab" data-q="3" onclick="selectAnalyticsQ(3)">3 четв.</button>
+      <button class="an-tab" data-q="4" onclick="selectAnalyticsQ(4)">4 четв.</button>
+      <button class="an-tab" data-q="compare" onclick="selectAnalyticsQ('compare')">⚖️ Сравнить</button>
+    </div>
+    <div id="analyticsBody"></div>
+  </div>
+
+  <!-- ЭКРАН 4: АРХИВ -->
+  <div id="tab-archive">
+    <div class="buttons">
+      <button class="btn btn-export" onclick="archiveCurrentQuarter()" style="background:#fef3c7;color:#92400e;">📸 Зафиксировать четверть</button>
+      <button class="btn btn-export" onclick="exportData()">📤 Экспорт JSON</button>
+      <button class="btn btn-export" style="background:#e0e7ff; color:#3730a3;" onclick="generatePDF()">🖨️ Скачать PDF</button>
+      <label class="btn btn-import">📥 Импорт JSON<input type="file" accept=".json" onchange="importData(event)" style="display:none"></label>
+      <button class="btn btn-reset" onclick="resetAll()">🗑️ Сбросить всё</button>
+    </div>
+    <div id="archiveContent"></div>
+  </div>
+
+</div>
+
+<!-- Скрытый блок для печати (вынесен из скрипта!) -->
+<div id="print-area" style="display: none;"></div>
+
+<script>
+// ==========================================================
+// 1. БАЗА ДАННЫХ И РАСПИСАНИЕ
+// ==========================================================
+const STORAGE_KEY = "attestat_v4";
+const THEME_KEY = "attestat_theme";
+
+const SUBJECTS = [
+  { name: "Белорусский язык", type: "regular" },
+  { name: "Белорусская литература", type: "regular" },
+  { name: "Русский язык", type: "exam" },
+  { name: "Русская литература", type: "regular" },
+  { name: "Английский язык", type: "regular" },
+  { name: "Математика", type: "exam" },
+  { name: "Физика", type: "exam" },
+  { name: "Информатика", type: "regular" },
+  { name: "Астрономия", type: "regular" },
+  { name: "Биология", type: "regular" },
+  { name: "Химия", type: "regular" },
+  { name: "История Беларуси в контексте всемирной истории", type: "regular" },
+  { name: "Обществоведение", type: "regular" },
+  { name: "География", type: "regular" },
+  { name: "Физическая культура", type: "regular" },
+  { name: "Допризывная и медицинская подготовка", type: "single_quarter", quarter: 2 },
+  { name: "Черчение", type: "fixed", fixedGrade: 10 },
+];
+
+// Расписание 1-го полугодия (0 = Пн, 1 = Вт ... 4 = Пт)
+const SCHEDULE = [
+  ["Белорусская литература", "Белорусский язык", "Физическая культура", "Математика", "Математика", "Английский язык"],
+  ["Математика", "Математика", "Химия", "Английский язык", "Русский язык", "Русская литература"],
+  ["Информатика", "Английский язык", "Обществоведение", "Биология", "Химия", "Белорусский язык", "История Беларуси в контексте всемирной истории"],
+  ["География", "Математика", "Физика", "Физическая культура", "История Беларуси в контексте всемирной истории", "Английский язык"],
+  ["Физика", "Русская литература", "Астрономия", "Биология", "Физическая культура", "Математика"]
+];
+
+// Даты четвертей
+const Q_DATES = {
+  1: { start: "2026-09-01", end: "2026-10-31" },
+  2: { start: "2026-11-09", end: "2026-12-24" },
+  3: { start: "2027-01-11", end: "2027-03-20" },
+  4: { start: "2027-03-29", end: "2027-05-25" }
+};
+
+const PERIODS = [
+  { name: "1 четверть", start: "2026-09-01", end: "2026-10-31", type: "" },
+  { name: "Осенние каникулы", start: "2026-11-01", end: "2026-11-08", type: "holiday" },
+  { name: "2 четверть", start: "2026-11-09", end: "2026-12-24", type: "" },
+  { name: "Зимние каникулы", start: "2026-12-25", end: "2027-01-10", type: "holiday" },
+  { name: "3 четверть", start: "2027-01-11", end: "2027-03-20", type: "" },
+  { name: "Весенние каникулы", start: "2027-03-21", end: "2027-03-28", type: "holiday" },
+  { name: "4 четверть", start: "2027-03-29", end: "2027-05-25", type: "" },
+  { name: "ЦЭ", start: "2027-05-26", end: "2027-05-31", type: "exam" },
+  { name: "Летние каникулы", start: "2027-06-01", end: "2027-08-31", type: "holiday" },
+];
+
+// ==========================================================
+// 2. ГЛОБАЛЬНОЕ СОСТОЯНИЕ
+// ==========================================================
+let data = loadData();
+let currentQuarter = 1;
+let currentWeekStart = null;
+let currentAnalyticsQ = 1;
+
+function loadData() {
+  try { const raw = localStorage.getItem(STORAGE_KEY); return raw ? JSON.parse(raw) : { _grades: {}, _archive: {}, _events: [], _exam: {} }; }
+  catch (e) { return { _grades: {}, _archive: {}, _events: [], _exam: {} }; }
+}
+function saveData() { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); }
+
+// ==========================================================
+// 3. УТИЛИТЫ ДАТ И ПЕРИОДОВ
+// ==========================================================
+function getMonday(d) {
+  d = new Date(d);
+  const day = d.getDay();
+  const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+  return new Date(d.setDate(diff));
+}
+function formatDate(d) {
+  const y = d.getFullYear(); const m = String(d.getMonth() + 1).padStart(2, '0'); const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+function formatShortDate(d) {
+  return d.toLocaleDateString("ru-RU", { day: "numeric", month: "short" }).replace('.', '');
+}
+
+function updatePeriodBadge() {
+  const badge = document.getElementById('periodBadge');
+  const now = new Date();
+  now.setHours(0,0,0,0);
+  
+  let current = null;
+  for (let p of PERIODS) {
+    const s = new Date(p.start); const e = new Date(p.end); e.setHours(23,59,59,999);
+    if (now >= s && now <= e) { current = p; break; }
+  }
+  
+  if (!current) {
+    if (now < new Date("2026-09-01")) current = { name: "Летние каникулы", type: "holiday" };
+    else current = { name: "После учёбы", type: "off" };
+  }
+  
+  badge.textContent = current.name;
+  badge.className = "period-badge " + current.type;
+}
+
+// ==========================================================
+// 4. ПЕРЕКЛЮЧЕНИЕ ВКЛАДОК
+// ==========================================================
+function switchTab(tabId) {
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.querySelector(`.nav-tab[onclick="switchTab('${tabId}')"]`).classList.add('active');
+  
+  document.getElementById('tab-diary').style.display = tabId === 'diary' ? 'block' : 'none';
+  document.getElementById('tab-table').style.display = tabId === 'table' ? 'block' : 'none';
+  document.getElementById('tab-analytics').style.display = tabId === 'analytics' ? 'block' : 'none';
+  document.getElementById('tab-archive').style.display = tabId === 'archive' ? 'block' : 'none';
+
+  if (tabId === 'table') { renderTable(); updateSummary(); }
+  if (tabId === 'analytics') { renderAnalytics(); }
+  if (tabId === 'archive') { renderArchive(); }
+}
+
+// ==========================================================
+// 5. РЕНДЕР ДНЕВНИКА
+// ==========================================================
+function selectQuarter(q) {
+  currentQuarter = q;
+  currentWeekStart = null; // Сбрасываем, чтобы вычислить заново
+  
+  document.querySelectorAll('.q-tab').forEach(t => t.classList.toggle('active', parseInt(t.dataset.q) === q));
+  
+  const today = new Date();
+  const qStart = new Date(Q_DATES[q].start);
+  const qEnd = new Date(Q_DATES[q].end);
+  
+  if (today >= qStart && today <= qEnd) {
+    currentWeekStart = getMonday(today);
+  } else {
+    currentWeekStart = getMonday(qStart);
+  }
+  
+  renderWeeks();
+  renderDiary();
+}
+
+function renderWeeks() {
+  const container = document.getElementById('weekScroll');
+  container.innerHTML = '';
+  
+  const start = getMonday(new Date(Q_DATES[currentQuarter].start));
+  const end = new Date(Q_DATES[currentQuarter].end);
+  let iterDate = new Date(start);
+  const today = new Date(); today.setHours(0,0,0,0);
+  
+  // Генерируем ВСЕ недели четверти
+  while (iterDate <= end) {
+    const thisWeekStart = new Date(iterDate);
+    const weekEnd = new Date(thisWeekStart);
+    weekEnd.setDate(weekEnd.getDate() + 6);
+    
+    const btn = document.createElement('button');
+    btn.className = 'week-btn';
+    if (formatDate(thisWeekStart) === formatDate(currentWeekStart)) btn.classList.add('active');
+    if (today >= thisWeekStart && today <= weekEnd) btn.classList.add('current-week');
+    
+    btn.textContent = `${formatShortDate(thisWeekStart)} – ${formatShortDate(weekEnd)}`;
+    btn.onclick = () => {
+      currentWeekStart = new Date(thisWeekStart);
+      document.querySelectorAll('.week-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      renderDiary();
+    };
+    container.appendChild(btn);
+    
+    iterDate.setDate(iterDate.getDate() + 7);
+  }
+  
+  // Прокрутка к активной неделе
+  setTimeout(() => {
+    const activeBtn = container.querySelector('.week-btn.active');
+    if (activeBtn) {
+      container.scrollLeft = activeBtn.offsetLeft - 100;
+    }
+  }, 10);
+}
+
+function renderDiary() {
+  const grid = document.getElementById('diaryGrid');
+  grid.innerHTML = '';
+  
+  // Если 3 или 4 четверть — показываем заглушку
+  if (currentQuarter === 3 || currentQuarter === 4) {
+    grid.innerHTML = '<div class="no-schedule" style="grid-column: 1 / -1; text-align: center; padding: 60px 20px; font-size: 18px; font-weight: 500; background: #fff; border-radius: 12px; box-shadow: 0 1px 4px rgba(0,0,0,0.06);">Расписание на данный период неизвестно</div>';
+    return;
+  }
+
+  const qStart = new Date(Q_DATES[currentQuarter].start);
+  const qEnd = new Date(Q_DATES[currentQuarter].end);
+  const todayStr = formatDate(new Date());
+  
+  for (let i = 0; i < 5; i++) {
+    const currentDate = new Date(currentWeekStart);
+    currentDate.setDate(currentDate.getDate() + i);
+    const dateStr = formatDate(currentDate);
+    
+    const card = document.createElement('div');
+    card.className = 'day-card';
+    
+    const isToday = dateStr === todayStr;
+    const header = document.createElement('div');
+    header.className = 'day-header' + (isToday ? ' today' : '');
+    header.textContent = currentDate.toLocaleDateString("ru-RU", { weekday: 'short', day: 'numeric', month: 'short' });
+    card.appendChild(header);
+    
+    const body = document.createElement('div');
+    body.className = 'day-body';
+    
+    if (currentDate < qStart || currentDate > qEnd) {
+      body.innerHTML = '<div style="color:#94a3b8; text-align:center; font-size:12px; margin-top:20px;">Нет учёбы</div>';
+    } else {
+      const lessons = SCHEDULE[i];
+      if (lessons) {
+        lessons.forEach((subjName, idx) => {
+          const row = document.createElement('div');
+          row.className = 'lesson-row';
+          
+          const nameLabel = document.createElement('div');
+          nameLabel.className = 'lesson-name';
+          nameLabel.textContent = subjName;
+          
+          const input = document.createElement('input');
+          input.className = 'lesson-input';
+          input.type = 'text';
+          input.placeholder = '—';
+          
+          if (!data._grades[dateStr]) data._grades[dateStr] = {};
+          const val = data._grades[dateStr][idx] || "";
+          input.value = val;
+          
+          if (val) {
+            input.classList.add(val.includes('/') || val.includes(' ') ? 'dual' : 'has-grade');
+          }
+          
+          input.addEventListener('input', (e) => {
+            const v = e.target.value.trim();
+            data._grades[dateStr][idx] = v;
+            saveData();
+            
+            input.classList.remove('has-grade', 'dual');
+            if (v) input.classList.add(v.includes('/') || v.includes(' ') ? 'dual' : 'has-grade');
+          });
+          
+          row.appendChild(nameLabel);
+          row.appendChild(input);
+          body.appendChild(row);
+        });
+      }
+    }
+    
+    card.appendChild(body);
+    grid.appendChild(card);
+  }
+}
+
+// ==========================================================
+// 6. МАТЕМАТИКА И РАСЧЁТЫ
+// ==========================================================
+function parseGrades(text) {
+  if (!text) return [];
+  const cleaned = String(text).replace(/[,;.\/]/g, " ");
+  const out = [];
+  cleaned.split(/\s+/).forEach(tok => {
+    const n = parseInt(tok, 10);
+    if (!isNaN(n) && n >= 1 && n <= 10) out.push(n);
+  });
+  return out;
+}
+
+function avgOf(arr) { if (!arr.length) return null; return arr.reduce((a,b) => a+b, 0) / arr.length; }
+function gradesNeededToNextTier(grades) {
+  if (!grades || grades.length === 0) return null;
+  const n = grades.length;
+  const sum = grades.reduce((a, b) => a + b, 0);
+  const avg = sum / n;
+  const currentQ = roundBelarus(avg);
+
+  if (currentQ >= 10) {
+    return { quarter: 10, next: null, needed: 0 };
+  }
+  const nextTier = currentQ + 1;
+  const T = nextTier - 0.5; // порог для следующей оценки (напр. 8.5 для «9»)
+  let needed = (T * n - sum) / (10 - T);
+  needed = Math.max(0, Math.ceil(needed - 1e-9));
+  return { quarter: currentQ, next: nextTier, needed };
+}
+function roundBelarus(avg) { if (avg === null) return null; return Math.floor(avg + 0.5 + 1e-9); }
+
+function getGradesForSubject(subjName, qNum) {
+  let grades = [];
+  const qStart = new Date(Q_DATES[qNum].start);
+  const qEnd = new Date(Q_DATES[qNum].end);
+  
+  for (const dateStr in data._grades) {
+    const d = new Date(dateStr);
+    if (d >= qStart && d <= qEnd) {
+      const dayOfWeek = d.getDay() - 1;
+      if (dayOfWeek >= 0 && dayOfWeek < 5) {
+        const lessons = SCHEDULE[dayOfWeek];
+        if (lessons) {
+          lessons.forEach((name, idx) => {
+            if (name === subjName) {
+              const val = data._grades[dateStr][idx];
+              if (val) grades.push(...parseGrades(val));
+            }
+          });
+        }
+      }
+    }
+  }
+  return grades;
+}
+
+function calcQuarterGrade(subjName, qNum) {
+  const grades = getGradesForSubject(subjName, qNum);
+  if (!grades.length) return null;
+  return roundBelarus(avgOf(grades));
+}
+
+function calcAnnual(subjName, subjType, fixedGrade) {
+  if (subjType === "fixed") return fixedGrade;
+  if (subjType === "single_quarter") return calcQuarterGrade(subjName, 2);
+  
+  const q = [];
+  for (let i = 1; i <= 4; i++) {
+    const g = calcQuarterGrade(subjName, i);
+    if (g !== null) q.push(g);
+  }
+  if (!q.length) return null;
+  return roundBelarus(avgOf(q));
+}
+
+function calcFinal(subjName, subjType, fixedGrade) {
+  const annual = calcAnnual(subjName, subjType, fixedGrade);
+  if (annual === null) return null;
+  if (subjType !== "exam") return annual;
+  
+  const examVal = data._exam[subjName];
+  const ex = parseInt(examVal, 10);
+  if (isNaN(ex) || ex < 1 || ex > 10) return annual;
+  if (ex <= 2) return ex;
+  return roundBelarus((annual + ex) / 2);
+}
+
+function gradeColor(v, onDark = false) {
+  if (v === null || v === undefined || v === "") return onDark ? "rgba(255,255,255,0.5)" : "#cbd5e1";
+  const n = Math.round(Number(v));
+  let hue;
+  if (n <= 5) hue = 0; else if (n === 6) hue = 30; else if (n === 7) hue = 60;
+  else if (n === 8) hue = 90; else if (n === 9) hue = 120; else hue = 210;
+  return onDark ? `hsl(${hue}, 100%, 78%)` : `hsl(${hue}, 75%, 40%)`;
+}
+
+// ==========================================================
+// 7. ТАБЛИЦА (Вкладка "Итоги")
+// ==========================================================
+function renderTable() {
+  const tbody = document.getElementById('tableBody');
+  tbody.innerHTML = '';
+  
+  const sorted = [...SUBJECTS].sort((a,b) => {
+    if (a.type === 'fixed' && b.type !== 'fixed') return 1;
+    if (a.type !== 'fixed' && b.type === 'fixed') return -1;
+    return a.name.localeCompare(b.name, "ru");
+  });
+
+  sorted.forEach(subj => {
+    const tr = document.createElement('tr');
+    const tdName = document.createElement('td');
+    tdName.textContent = subj.name;
+    tr.appendChild(tdName);
+    
+    if (subj.type === 'fixed') {
+      for(let i=1; i<=4; i++){ const td = document.createElement('td'); td.textContent = '—'; tr.appendChild(td); }
+      const tdA = document.createElement('td'); tdA.textContent = '—'; tr.appendChild(tdA);
+      const tdE = document.createElement('td'); tdE.textContent = '—'; tr.appendChild(tdE);
+      const tdF = document.createElement('td'); tdF.textContent = subj.fixedGrade; tdF.style.color = gradeColor(subj.fixedGrade); tdF.style.fontWeight = '700'; tr.appendChild(tdF);
+    } 
+    else if (subj.type === 'single_quarter') {
+      for(let i=1; i<=4; i++){
+        const td = document.createElement('td');
+        if (i === subj.quarter) { 
+          const g = calcQuarterGrade(subj.name, i); 
+          if (g !== null) {
+            const grades = getGradesForSubject(subj.name, i);
+            const avg = avgOf(grades);
+            td.innerHTML = `<div style="font-weight:700; font-size:14px; color:${gradeColor(g)};">${g}</div>
+                            <div class="cell-hint">ср. ${avg.toFixed(2)}</div>`;
+          } else {
+            td.textContent = '—';
+          }
+        }
+        else { td.textContent = '—'; }
+        tr.appendChild(td);
+      }
+      const tdA = document.createElement('td'); 
+      const a = calcAnnual(subj.name, subj.type); 
+      if (a !== null) {
+        const qGrades = [];
+        for(let i=1; i<=4; i++){ const qg = calcQuarterGrade(subj.name, i); if(qg!==null) qGrades.push(qg); }
+        const annualRaw = qGrades.length ? avgOf(qGrades) : null;
+        tdA.innerHTML = `<div style="font-weight:700; font-size:14px; color:${gradeColor(a)};">${a}</div>
+                         ${annualRaw !== null ? `<div class="cell-hint">ср. ${annualRaw.toFixed(2)}</div>` : ""}`;
+      } else { tdA.textContent = '—'; }
+      tr.appendChild(tdA);
+      const tdE = document.createElement('td'); tdE.textContent = '—'; tr.appendChild(tdE);
+      const tdF = document.createElement('td'); const f = calcFinal(subj.name, subj.type); tdF.textContent = f !== null ? f : '—'; tdF.style.color = gradeColor(f); tdF.style.fontWeight='700'; tr.appendChild(tdF);
+    } 
+    else {
+      for(let i=1; i<=4; i++){
+        const td = document.createElement('td');
+        const g = calcQuarterGrade(subj.name, i);
+        if (g !== null) {
+          const grades = getGradesForSubject(subj.name, i);
+          const avg = avgOf(grades);
+          td.innerHTML = `<div style="font-weight:700; font-size:14px; color:${gradeColor(g)}; cursor:pointer;" onclick="openSimulator('${subj.name}', ${i})" title="Нажми, чтобы симулировать оценку">${g} 🔮</div>
+                          <div class="cell-hint">ср. ${avg.toFixed(2)}</div>`;
+        } else {
+          td.innerHTML = `<div style="color:#cbd5e1; cursor:pointer;" onclick="openSimulator('${subj.name}', ${i})">— 🔮</div>`;
+        }
+        tr.appendChild(td);
+      }
+      
+      const tdA = document.createElement('td'); 
+      const a = calcAnnual(subj.name, subj.type); 
+      if (a !== null) {
+        const qGrades = [];
+        for(let i=1; i<=4; i++){ const qg = calcQuarterGrade(subj.name, i); if(qg!==null) qGrades.push(qg); }
+        const annualRaw = qGrades.length ? avgOf(qGrades) : null;
+        tdA.innerHTML = `<div style="font-weight:700; font-size:14px; color:${gradeColor(a)};">${a}</div>
+                         ${annualRaw !== null ? `<div class="cell-hint">ср. ${annualRaw.toFixed(2)}</div>` : ""}`;
+      } else { tdA.textContent = '—'; }
+      tr.appendChild(tdA);
+      
+      const tdE = document.createElement('td');
+      if (subj.type === 'exam') {
+        const inp = document.createElement('input');
+        inp.className = 'q-input'; inp.type = 'text'; inp.placeholder = '—'; inp.maxLength = 2;
+        inp.value = data._exam[subj.name] || '';
+        inp.oninput = (e) => { data._exam[subj.name] = e.target.value; saveData(); renderTable(); updateSummary(); };
+        tdE.appendChild(inp);
+      } else { tdE.textContent = '—'; }
+      tr.appendChild(tdE);
+      
+      const tdF = document.createElement('td'); const f = calcFinal(subj.name, subj.type); tdF.textContent = f !== null ? f : '—'; tdF.style.color = gradeColor(f); tdF.style.fontWeight='700'; tr.appendChild(tdF);
+    }
+    tbody.appendChild(tr);
+  });
+}
+
+// === СИМУЛЯТОР ===
+function openSimulator(subjName, qNum) {
+  const currentGrades = getGradesForSubject(subjName, qNum);
+  const currentAvg = avgOf(currentGrades) || 0;
+  const currentQ = roundBelarus(currentAvg) || '—';
+  
+  const hypoGrade = prompt(`🔮 Симулятор для "${subjName}" (${qNum} четверть)\n\nСейчас у тебя среднее: ${currentAvg.toFixed(2)} (четвертная: ${currentQ})\n\nВведи оценку, которую хочешь получить (от 1 до 10), чтобы узнать, как изменится балл:`);
+  
+  if (hypoGrade && !isNaN(hypoGrade) && hypoGrade >= 1 && hypoGrade <= 10) {
+    const newGrades = [...currentGrades, parseInt(hypoGrade)];
+    const newAvg = avgOf(newGrades);
+    const newQ = roundBelarus(newAvg);
+    
+    let diff = newAvg - currentAvg;
+    let diffStr = diff > 0 ? `+${diff.toFixed(2)}` : diff.toFixed(2);
+    
+    let nextTierMsg = "";
+    const nextTier = (typeof currentQ === 'number' ? currentQ + 1 : 1);
+    if (newQ > currentQ && nextTier <= 10) {
+      nextTierMsg = `\n\n🎉 ПОЗДРАВЛЯЮ! Ты вытянул четвертную до ${newQ}!`;
+    } else if (nextTier <= 10) {
+      const needed = gradesNeededToNextTier(newGrades);
+      if (needed && needed.needed > 0) {
+         nextTierMsg = `\n\nДо оценки ${nextTier} тебе останется получить ещё ${needed.needed} шт. десяток.`;
+      }
+    }
+    
+    alert(`Результат с оценкой ${hypoGrade}:\n\nСреднее станет: ${newAvg.toFixed(2)} (${diffStr})\nЧетвертная выйдет: ${newQ}${nextTierMsg}`);
+  }
+}
+
+function updateSummary() {
+  const qAvg = [[], [], [], []];
+  const annuals = [];
+  const finals = [];
+  
+  SUBJECTS.forEach(subj => {
+    if (subj.type === 'fixed') { finals.push(subj.fixedGrade); return; }
+    for(let i=1; i<=4; i++) {
+      const g = calcQuarterGrade(subj.name, i);
+      if (g !== null) qAvg[i-1].push(g);
+    }
+    const a = calcAnnual(subj.name, subj.type);
+    if (a !== null) annuals.push(a);
+    const f = calcFinal(subj.name, subj.type);
+    if (f !== null) finals.push(f);
+  });
+
+  const qCards = qAvg.map((arr, i) => {
+    const a = avgOf(arr);
+    return `<div class="summary-item"><div class="label">${i+1} четверть</div><div class="value" style="color:${gradeColor(a, true)}">${a !== null ? a.toFixed(2) : "—"}</div><div class="sub">${arr.length} предм.</div></div>`;
+  }).join("");
+
+  const aAvg = avgOf(annuals);
+  const fAvg = avgOf(finals);
+
+  document.getElementById("summary").innerHTML = qCards + `
+    <div class="summary-item"><div class="label">Годовые</div><div class="value" style="color:${gradeColor(aAvg, true)}">${aAvg !== null ? aAvg.toFixed(2) : "—"}</div><div class="sub">${annuals.length} предм.</div></div>
+    <div class="summary-item" style="background:rgba(255,255,255,0.15);border-radius:10px;padding:6px 4px;"><div class="label">🏆 Аттестат</div><div class="value" style="color:${gradeColor(fAvg, true)}">${fAvg !== null ? fAvg.toFixed(2) : "—"}</div><div class="sub">${finals.length} предм.</div></div>
+  `;
+}
+
+// ==========================================================
+// 8. АНАЛИТИКА
+// ==========================================================
+function selectAnalyticsQ(q) {
+  currentAnalyticsQ = q;
+  document.querySelectorAll('.an-tab').forEach(t => t.classList.toggle('active', String(t.dataset.q) === String(q)));
+  renderAnalytics();
+}
+
+function renderAnalytics() {
+  const body = document.getElementById('analyticsBody');
+  if (currentAnalyticsQ === 'compare') { body.innerHTML = renderComparison(); return; }
+  
+  const q = currentAnalyticsQ;
+  body.innerHTML = `
+    <div class="an-section"><h3>🥧 Распределение всех оценок в ${q} четверти</h3><div id="pieRaw"></div></div>
+    <div class="an-section"><h3>🥧 Распределение четвертных оценок</h3><div id="pieQuarter"></div></div>
+    <div class="an-section"><h3>📊 Средний балл по предметам</h3><div id="barsSubjects"></div></div>
+  `;
+
+  const rawCounts = Array(11).fill(0);
+  let totalGrades = 0;
+  SUBJECTS.forEach(subj => {
+    if (subj.type === 'fixed') return;
+    const gs = getGradesForSubject(subj.name, q);
+    gs.forEach(g => { rawCounts[g]++; totalGrades++; });
+  });
+  
+  const qCounts = Array(11).fill(0);
+  SUBJECTS.forEach(subj => {
+    if (subj.type === 'fixed') { qCounts[subj.fixedGrade]++; return; }
+    const g = calcQuarterGrade(subj.name, q);
+    if (g !== null) qCounts[g]++;
+  });
+
+  const bars = [];
+  SUBJECTS.forEach(subj => {
+    if (subj.type === 'fixed') return;
+    const gs = getGradesForSubject(subj.name, q);
+    if (gs.length > 0) bars.push({ label: subj.name, value: avgOf(gs) });
+  });
+  bars.sort((a, b) => a.value - b.value);
+
+  drawPie('pieRaw', rawCounts, totalGrades);
+  drawPie('pieQuarter', qCounts, qCounts.reduce((a,b)=>a+b,0));
+  
+  const barsHtml = bars.map(it => {
+    const pct = Math.max(4, (it.value / 10) * 100);
+    return `<div class="bar-row"><div class="bar-label">${it.label}</div><div class="bar-track"><div class="bar-fill" style="width:${pct}%; background:${gradeColor(Math.round(it.value))};">${it.value.toFixed(2)}</div></div></div>`;
+  }).join("");
+  document.getElementById('barsSubjects').innerHTML = bars.length ? barsHtml : '<div class="an-empty">Нет данных</div>';
+}
+
+function drawPie(containerId, counts, total) {
+  const el = document.getElementById(containerId);
+  if (total === 0) { el.innerHTML = '<div class="an-empty">Нет оценок</div>'; return; }
+  
+  let paths = [];
+  let angle = -Math.PI / 2;
+  const cx = 110, cy = 110, r = 104;
+  
+  for (let g = 1; g <= 10; g++) {
+    if (counts[g] === 0) continue;
+    const slice = (counts[g] / total) * Math.PI * 2;
+    if (counts[g] === total) {
+      paths.push(`<circle cx="${cx}" cy="${cy}" r="${r}" fill="${gradeColor(g)}" stroke="#fff" stroke-width="2"/>`);
+    } else {
+      const x1 = cx + r * Math.cos(angle), y1 = cy + r * Math.sin(angle);
+      const x2 = cx + r * Math.cos(angle + slice), y2 = cy + r * Math.sin(angle + slice);
+      paths.push(`<path d="M ${cx} ${cy} L ${x1} ${y1} A ${r} ${r} 0 ${slice > Math.PI ? 1 : 0} 1 ${x2} ${y2} Z" fill="${gradeColor(g)}" stroke="#fff" stroke-width="2"/>`);
+      angle += slice;
+    }
+  }
+
+  const legend = [];
+  for (let g = 1; g <= 10; g++) {
+    if (counts[g] > 0) legend.push(`<div class="pie-legend-item"><span class="pie-dot" style="background:${gradeColor(g)}"></span>Оценка <b>${g}</b>: ${counts[g]} шт</div>`);
+  }
+
+  el.innerHTML = `<div style="display:flex; gap:20px; align-items:center; flex-wrap:wrap;"><svg width="220" height="220" viewBox="0 0 220 220">${paths.join("")}</svg><div>${legend.join("")}</div></div>`;
+}
+
+function renderComparison() {
+  const qAvgs = [];
+  for (let q = 1; q <= 4; q++) {
+    const gs = [];
+    SUBJECTS.forEach(subj => {
+      if (subj.type === 'fixed') return;
+      const g = calcQuarterGrade(subj.name, q);
+      if (g !== null) gs.push(g);
+    });
+    qAvgs.push({ q, avg: gs.length ? avgOf(gs) : null });
+  }
+  
+  const bars = qAvgs.map(item => {
+    const h = item.avg !== null ? (item.avg / 10) * 100 : 0;
+    return `<div style="display:flex; flex-direction:column; align-items:center; justify-content:flex-end; height:150px; flex:1;">
+      <div style="font-weight:700; font-size:14px; color:${gradeColor(item.avg)}; margin-bottom:4px;">${item.avg !== null ? item.avg.toFixed(2) : "—"}</div>
+      <div style="width:60%; height:${h}%; background:${gradeColor(item.avg)}; border-radius:6px 6px 0 0;"></div>
+      <div style="margin-top:6px; font-size:12px; font-weight:600; color:#64748b;">${item.q} четв.</div>
+    </div>`;
+  }).join("");
+
+  return `<div class="an-section"><h3>📊 Средний балл по четвертям</h3><div style="display:flex; gap:16px; align-items:flex-end; height:180px; padding:0 12px;">${bars}</div></div>`;
+}
+
+// ==========================================================
+// 9. АРХИВ И НАСТРОЙКИ
+// ==========================================================
+function archiveCurrentQuarter() {
+  const q = currentQuarter;
+  const snapshot = {};
+  SUBJECTS.forEach(subj => {
+    if (subj.type === 'fixed') return;
+    const g = calcQuarterGrade(subj.name, q);
+    if (g !== null) snapshot[subj.name] = g;
+  });
+  if (Object.keys(snapshot).length === 0) { alert("Нет оценок в этой четверти."); return; }
+  
+  if (!data._archive) data._archive = {};
+  data._archive["Q" + q] = { ts: Date.now(), snapshot };
+  saveData();
+  renderArchive();
+  alert("📸 Четверть зафиксирована!");
+}
+
+function renderArchive() {
+  const el = document.getElementById('archiveContent');
+  const arch = data._archive || {};
+  const keys = Object.keys(arch).sort();
+  if (!keys.length) { el.innerHTML = '<div class="an-empty">Архив пуст</div>'; return; }
+  
+  el.innerHTML = keys.map(k => {
+    const a = arch[k];
+    const date = new Date(a.ts).toLocaleString("ru-RU");
+    const rows = Object.entries(a.snapshot).map(([n, g]) => `<div style="padding:4px 0; border-bottom:1px solid #e2e8f0; font-size:13px;"><b>${n}</b>: <span style="color:${gradeColor(g)}; font-weight:700;">${g}</span></div>`).join("");
+    return `<details style="background:#fff; padding:10px; border-radius:8px; margin-bottom:8px; border:1px solid #e2e8f0;">
+      <summary style="cursor:pointer; font-weight:600;">${k.replace("Q", "Четверть ")} — ${date}</summary>
+      <div style="margin-top:10px;">${rows}</div>
+    </details>`;
+  }).join("");
+}
+
+function exportData() {
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = `diary_backup.json`;
+  a.click();
+}
+
+function importData(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      const parsed = JSON.parse(e.target.result);
+      data = parsed;
+      saveData();
+      switchTab('diary');
+      alert("Данные загружены!");
+    } catch (err) { alert("Ошибка загрузки"); }
+  };
+  reader.readAsText(file);
+  event.target.value = "";
+}
+
+function resetAll() {
+  if (!confirm("Сбросить ВСЕ оценки? Это нельзя отменить.")) return;
+  data = { _grades: {}, _archive: {}, _events: [], _exam: {} };
+  saveData();
+  switchTab('diary');
+  alert("Всё сброшено");
+}
+
+// ==========================================================
+// 10. ИНИЦИАЛИЗАЦИЯ
+// ==========================================================
+function toggleTheme() {
+  const isDark = document.body.classList.toggle('dark');
+  localStorage.setItem(THEME_KEY, isDark ? 'dark' : 'light');
+  document.getElementById('themeToggle').textContent = isDark ? '☀️' : '🌙';
+}
+
+function init() {
+  if (localStorage.getItem(THEME_KEY) === 'dark') {
+    document.body.classList.add('dark');
+    document.getElementById('themeToggle').textContent = '☀️';
+  }
+  
+  document.getElementById('datetime').textContent = new Date().toLocaleString("ru-RU", { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute:'2-digit' });
+  updatePeriodBadge();
+  
+  const today = formatDate(new Date());
+  let defaultQ = 1;
+  if (today >= "2026-11-09") defaultQ = 2;
+  if (today >= "2027-01-11") defaultQ = 3;
+  if (today >= "2027-03-29") defaultQ = 4;
+  
+  selectQuarter(defaultQ);
+}
+
+init();
+
+// ==========================================================
+// 11. PDF
+// ==========================================================
+function generatePDF() {
+  const printArea = document.getElementById('print-area');
+  const today = new Date().toLocaleDateString('ru-RU');
+  
+  let rows = '';
+  const sorted = [...SUBJECTS].sort((a,b) => a.name.localeCompare(b.name, "ru"));
+  
+  sorted.forEach(subj => {
+    let qGrades = [];
+    for(let i=1; i<=4; i++) {
+      const g = calcQuarterGrade(subj.name, i);
+      qGrades.push(g !== null ? g : '—');
+    }
+    const annual = calcAnnual(subj.name, subj.type) || '—';
+    const final = calcFinal(subj.name, subj.type) || '—';
+    
+    rows += `<tr>
+      <td style="text-align: left;">${subj.name}</td>
+      <td>${qGrades[0]}</td><td>${qGrades[1]}</td><td>${qGrades[2]}</td><td>${qGrades[3]}</td>
+      <td><b>${annual}</b></td>
+      <td><b>${final}</b></td>
+    </tr>`;
+  });
+
+  printArea.innerHTML = `
+    <div class="print-header">
+      <h2>📊 Табель успеваемости</h2>
+      <p>11 класс | Дата печати: ${today}</p>
+    </div>
+    <table class="print-table">
+      <thead>
+        <tr>
+          <th>Предмет</th>
+          <th>1 четв.</th>
+          <th>2 четв.</th>
+          <th>3 четв.</th>
+          <th>4 четв.</th>
+          <th>Годовая</th>
+          <th>Итоговая</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${rows}
+      </tbody>
+    </table>
+    <div class="print-footer">
+      Сгенерировано в электронном дневнике.
+    </div>
+  `;
+  
+  // Небольшая задержка, чтобы браузер отрисовал скрытый блок
+  setTimeout(() => {
+    window.print();
+  }, 100);
+}
+</script>
+</body>
+</html>
