@@ -2,7 +2,6 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-<link rel="manifest" href="manifest.json">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Электронный дневник 11 класс</title>
 <style>
@@ -190,7 +189,7 @@
 
 </div>
 
-<!-- Скрытый блок для печати (вынесен из скрипта!) -->
+<!-- Скрытый блок для печати (вынесен из скрипта) -->
 <div id="print-area" style="display: none;"></div>
 
 <script>
@@ -220,13 +219,22 @@ const SUBJECTS = [
   { name: "Черчение", type: "fixed", fixedGrade: 10 },
 ];
 
-// Расписание 1-го полугодия (0 = Пн, 1 = Вт ... 4 = Пт)
+// Обычное расписание (0 = Пн, 1 = Вт ... 4 = Пт)
 const SCHEDULE = [
   ["Белорусская литература", "Белорусский язык", "Физическая культура", "Математика", "Математика", "Английский язык"],
   ["Математика", "Математика", "Химия", "Английский язык", "Русский язык", "Русская литература"],
   ["Информатика", "Английский язык", "Обществоведение", "Биология", "Химия", "Белорусский язык", "История Беларуси в контексте всемирной истории"],
   ["География", "Математика", "Физика", "Физическая культура", "История Беларуси в контексте всемирной истории", "Английский язык"],
   ["Физика", "Русская литература", "Астрономия", "Биология", "Физическая культура", "Математика"]
+];
+
+// Расписание на неделю ДМП (9-15 ноября): Пн-Чт по 7 уроков, Пт - 6
+const DMP_SCHEDULE = [
+  ["Допризывная и медицинская подготовка", "Допризывная и медицинская подготовка", "Допризывная и медицинская подготовка", "Допризывная и медицинская подготовка", "Допризывная и медицинская подготовка", "Допризывная и медицинская подготовка", "Допризывная и медицинская подготовка"],
+  ["Допризывная и медицинская подготовка", "Допризывная и медицинская подготовка", "Допризывная и медицинская подготовка", "Допризывная и медицинская подготовка", "Допризывная и медицинская подготовка", "Допризывная и медицинская подготовка", "Допризывная и медицинская подготовка"],
+  ["Допризывная и медицинская подготовка", "Допризывная и медицинская подготовка", "Допризывная и медицинская подготовка", "Допризывная и медицинская подготовка", "Допризывная и медицинская подготовка", "Допризывная и медицинская подготовка", "Допризывная и медицинская подготовка"],
+  ["Допризывная и медицинская подготовка", "Допризывная и медицинская подготовка", "Допризывная и медицинская подготовка", "Допризывная и медицинская подготовка", "Допризывная и медицинская подготовка", "Допризывная и медицинская подготовка", "Допризывная и медицинская подготовка"],
+  ["Допризывная и медицинская подготовка", "Допризывная и медицинская подготовка", "Допризывная и медицинская подготовка", "Допризывная и медицинская подготовка", "Допризывная и медицинская подготовка", "Допризывная и медицинская подготовка"]
 ];
 
 // Даты четвертей
@@ -322,7 +330,7 @@ function switchTab(tabId) {
 // ==========================================================
 function selectQuarter(q) {
   currentQuarter = q;
-  currentWeekStart = null; // Сбрасываем, чтобы вычислить заново
+  currentWeekStart = null; 
   
   document.querySelectorAll('.q-tab').forEach(t => t.classList.toggle('active', parseInt(t.dataset.q) === q));
   
@@ -349,7 +357,6 @@ function renderWeeks() {
   let iterDate = new Date(start);
   const today = new Date(); today.setHours(0,0,0,0);
   
-  // Генерируем ВСЕ недели четверти
   while (iterDate <= end) {
     const thisWeekStart = new Date(iterDate);
     const weekEnd = new Date(thisWeekStart);
@@ -372,7 +379,6 @@ function renderWeeks() {
     iterDate.setDate(iterDate.getDate() + 7);
   }
   
-  // Прокрутка к активной неделе
   setTimeout(() => {
     const activeBtn = container.querySelector('.week-btn.active');
     if (activeBtn) {
@@ -385,7 +391,6 @@ function renderDiary() {
   const grid = document.getElementById('diaryGrid');
   grid.innerHTML = '';
   
-  // Если 3 или 4 четверть — показываем заглушку
   if (currentQuarter === 3 || currentQuarter === 4) {
     grid.innerHTML = '<div class="no-schedule" style="grid-column: 1 / -1; text-align: center; padding: 60px 20px; font-size: 18px; font-weight: 500; background: #fff; border-radius: 12px; box-shadow: 0 1px 4px rgba(0,0,0,0.06);">Расписание на данный период неизвестно</div>';
     return;
@@ -394,6 +399,8 @@ function renderDiary() {
   const qStart = new Date(Q_DATES[currentQuarter].start);
   const qEnd = new Date(Q_DATES[currentQuarter].end);
   const todayStr = formatDate(new Date());
+  const weekStartStr = formatDate(currentWeekStart);
+  const isDmpWeek = (weekStartStr === "2026-11-09"); 
   
   for (let i = 0; i < 5; i++) {
     const currentDate = new Date(currentWeekStart);
@@ -415,7 +422,8 @@ function renderDiary() {
     if (currentDate < qStart || currentDate > qEnd) {
       body.innerHTML = '<div style="color:#94a3b8; text-align:center; font-size:12px; margin-top:20px;">Нет учёбы</div>';
     } else {
-      const lessons = SCHEDULE[i];
+      let lessons = isDmpWeek ? DMP_SCHEDULE[i] : SCHEDULE[i];
+      
       if (lessons) {
         lessons.forEach((subjName, idx) => {
           const row = document.createElement('div');
@@ -474,6 +482,7 @@ function parseGrades(text) {
 }
 
 function avgOf(arr) { if (!arr.length) return null; return arr.reduce((a,b) => a+b, 0) / arr.length; }
+
 function gradesNeededToNextTier(grades) {
   if (!grades || grades.length === 0) return null;
   const n = grades.length;
@@ -485,11 +494,12 @@ function gradesNeededToNextTier(grades) {
     return { quarter: 10, next: null, needed: 0 };
   }
   const nextTier = currentQ + 1;
-  const T = nextTier - 0.5; // порог для следующей оценки (напр. 8.5 для «9»)
+  const T = nextTier - 0.5; 
   let needed = (T * n - sum) / (10 - T);
   needed = Math.max(0, Math.ceil(needed - 1e-9));
   return { quarter: currentQ, next: nextTier, needed };
 }
+
 function roundBelarus(avg) { if (avg === null) return null; return Math.floor(avg + 0.5 + 1e-9); }
 
 function getGradesForSubject(subjName, qNum) {
@@ -502,7 +512,10 @@ function getGradesForSubject(subjName, qNum) {
     if (d >= qStart && d <= qEnd) {
       const dayOfWeek = d.getDay() - 1;
       if (dayOfWeek >= 0 && dayOfWeek < 5) {
-        const lessons = SCHEDULE[dayOfWeek];
+        const weekStartStr = formatDate(getMonday(d));
+        const isDmpWeek = (weekStartStr === "2026-11-09");
+        const lessons = isDmpWeek ? DMP_SCHEDULE[dayOfWeek] : SCHEDULE[dayOfWeek];
+        
         if (lessons) {
           lessons.forEach((name, idx) => {
             if (name === subjName) {
@@ -654,7 +667,6 @@ function renderTable() {
   });
 }
 
-// === СИМУЛЯТОР ===
 function openSimulator(subjName, qNum) {
   const currentGrades = getGradesForSubject(subjName, qNum);
   const currentAvg = avgOf(currentGrades) || 0;
@@ -974,10 +986,7 @@ function generatePDF() {
     </div>
   `;
   
-  // Небольшая задержка, чтобы браузер отрисовал скрытый блок
-  setTimeout(() => {
-    window.print();
-  }, 100);
+  setTimeout(() => { window.print(); }, 100);
 }
 </script>
 </body>
