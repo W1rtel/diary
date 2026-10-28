@@ -2,7 +2,10 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#4f46e5">
+<!-- ВОТ ТА САМАЯ СТРОЧКА, КОТОРОЙ НЕ ХВАТАЛО! -->
+<link rel="manifest" href="manifest.json">
 <title>Электронный дневник 11 класс</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -10,7 +13,7 @@
   .container { max-width: 1500px; margin: 0 auto; }
   h1 { font-size: 20px; margin-bottom: 6px; }
   
-  .top-bar { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-bottom: 14px; }
+  .top-bar { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-bottom: 14px; position: relative; }
   .period-badge { padding: 7px 14px; border-radius: 8px; font-weight: 600; font-size: 13px; background: #e0e7ff; color: #3730a3; }
   .period-badge.holiday { background: #fef3c7; color: #92400e; }
   .period-badge.exam { background: #fee2e2; color: #991b1b; }
@@ -45,8 +48,8 @@
   .day-body { padding: 10px; display: flex; flex-direction: column; gap: 8px; flex: 1; }
   
   .lesson-row { display: flex; flex-direction: column; gap: 4px; }
-  .lesson-name { font-size: 11px; font-weight: 600; color: #334155; line-height: 1.2; }
-  .lesson-input { width: 100%; padding: 6px; border: 1.5px solid #d0d5dd; border-radius: 6px; font-size: 13px; font-family: inherit; text-align: center; font-weight: 700; }
+  .lesson-name { font-size: 12px; font-weight: 600; color: #334155; line-height: 1.2; }
+  .lesson-input { width: 100%; padding: 8px; border: 1.5px solid #d0d5dd; border-radius: 6px; font-size: 14px; font-family: inherit; text-align: center; font-weight: 700; }
   .lesson-input:focus { outline: none; border-color: #3b82f6; }
   .lesson-input.has-grade { background: #f0fdf4; border-color: #22c55e; color: #166534; }
   .lesson-input.dual { background: #eff6ff; border-color: #3b82f6; color: #1e40af; }
@@ -56,10 +59,10 @@
   table { width: 100%; border-collapse: collapse; background: #fff; }
   th, td { padding: 8px 6px; text-align: center; font-size: 12px; border-bottom: 1px solid #eef0f3; }
   th { background: #f8fafc; font-weight: 600; color: #475569; font-size: 11px; text-transform: uppercase; }
-  td:first-child, th:first-child { text-align: left; padding-left: 12px; font-weight: 500; min-width: 220px; }
+  td:first-child, th:first-child { text-align: left; padding-left: 12px; font-weight: 500; min-width: 180px; }
   tr:hover td:not(.current) { background: #fafbfc; }
   th.current, td.current { background: #fef9c3 !important; }
-  .q-input { width: 100%; min-width: 60px; padding: 4px; border: 1.5px solid #d0d5dd; border-radius: 5px; text-align: center; font-size: 12px; }
+  .q-input { width: 100%; min-width: 60px; padding: 6px; border: 1.5px solid #d0d5dd; border-radius: 5px; text-align: center; font-size: 14px; }
   .q-input:focus { outline: none; border-color: #3b82f6; }
   
   .summary { background: linear-gradient(135deg, #4f46e5, #7c3aed); color: #fff; border-radius: 14px; padding: 18px 20px; margin: 22px 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 14px; box-shadow: 0 4px 14px rgba(79,70,229,0.25); }
@@ -85,7 +88,7 @@
   .pie-legend-item { display: flex; align-items: center; gap: 8px; font-size: 13px; margin-bottom: 4px; }
   .pie-dot { width: 12px; height: 12px; border-radius: 50%; }
   .bar-row { display: flex; align-items: center; gap: 10px; font-size: 12px; margin-bottom: 6px; }
-  .bar-label { width: 200px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .bar-label { width: 160px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .bar-track { flex: 1; height: 22px; background: #f1f5f9; border-radius: 5px; overflow: hidden; }
   .bar-fill { height: 100%; display: flex; align-items: center; justify-content: flex-end; padding-right: 8px; color: #fff; font-size: 11px; font-weight: 700; }
 
@@ -105,6 +108,33 @@
   body.dark .an-tab { background: #1e293b; border-color: #475569; color: #cbd5e1; } body.dark .an-tab.active { background: #6366f1; border-color: #6366f1; color: #fff; }
   body.dark .no-schedule { background: #1e293b; color: #94a3b8; }
 
+  /* МОБИЛЬНАЯ АДАПТАЦИЯ (Версия 3.1) */
+  @media (max-width: 768px) {
+    body { padding: 10px; padding-bottom: 80px; }
+    .top-bar { flex-direction: row; justify-content: space-between; align-items: flex-start; }
+    .period-badge { font-size: 12px; padding: 5px 10px; }
+    .datetime { font-size: 11px; width: 100%; margin-top: 4px; order: 3; }
+    .btn-theme { position: absolute; right: 0; top: 0; }
+    
+    /* Делаем нижнюю навигацию */
+    .nav-tabs { 
+      position: fixed; bottom: 0; left: 0; width: 100%; 
+      background: #fff; border-top: 2px solid #e2e8f0; border-bottom: none; 
+      margin-bottom: 0; padding: 8px 4px; justify-content: space-around; 
+      z-index: 1000; box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
+    }
+    body.dark .nav-tabs { background: #1e293b; border-top-color: #334155; box-shadow: 0 -2px 10px rgba(0,0,0,0.3); }
+    .nav-tab { flex: 1; text-align: center; padding: 8px 2px; font-size: 11px; white-space: nowrap; display: flex; flex-direction: column; align-items: center; gap: 4px;}
+    
+    .quarter-tabs { overflow-x: auto; padding-bottom: 4px; }
+    .q-tab { padding: 8px; font-size: 14px; }
+    
+    /* Улучшаем таблицу на телефоне */
+    td:first-child, th:first-child { min-width: 140px; font-size: 11px; }
+    .summary { grid-template-columns: repeat(2, 1fr); padding: 12px; gap: 10px; }
+    .summary-item .value { font-size: 22px; }
+  }
+
   /* Печать PDF */
   @media print {
     body * { visibility: hidden; }
@@ -121,19 +151,18 @@
 </head>
 <body>
 <div class="container">
-  <h1>📊 Электронный дневник 11 класс</h1>
-  
   <div class="top-bar">
+    <h1 style="font-size: 18px; margin-bottom: 0;">📊 Мой дневник</h1>
+    <button class="btn-theme" id="themeToggle" onclick="toggleTheme()">🌙</button>
     <div class="period-badge" id="periodBadge">Загрузка…</div>
     <div class="datetime" id="datetime"></div>
-    <button class="btn-theme" id="themeToggle" onclick="toggleTheme()">🌙</button>
   </div>
 
   <div class="nav-tabs">
-    <button class="nav-tab active" onclick="switchTab('diary')">📅 Дневник</button>
-    <button class="nav-tab" onclick="switchTab('table')">📊 Итоги</button>
-    <button class="nav-tab" onclick="switchTab('analytics')">📈 Аналитика</button>
-    <button class="nav-tab" onclick="switchTab('archive')">📚 Архив</button>
+    <button class="nav-tab active" onclick="switchTab('diary')">📅 <span>Дневник</span></button>
+    <button class="nav-tab" onclick="switchTab('table')">📊 <span>Итоги</span></button>
+    <button class="nav-tab" onclick="switchTab('analytics')">📈 <span>Аналитика</span></button>
+    <button class="nav-tab" onclick="switchTab('archive')">📚 <span>Архив</span></button>
   </div>
 
   <!-- ЭКРАН 1: ДНЕВНИК -->
@@ -154,7 +183,7 @@
       <table id="mainTable">
         <thead>
           <tr>
-            <th>Предмет</th><th>1 четв.</th><th>2 четв.</th><th>3 четв.</th><th>4 четв.</th><th>Годовая</th><th>ЦЭ</th><th>Итоговая</th>
+            <th>Предмет</th><th>1 четв.</th><th>2 четв.</th><th>3 четв.</th><th>4 четв.</th><th>Годовая</th><th>ЦЭ</th><th>Итог</th>
           </tr>
         </thead>
         <tbody id="tableBody"></tbody>
@@ -178,24 +207,20 @@
   <!-- ЭКРАН 4: АРХИВ -->
   <div id="tab-archive">
     <div class="buttons">
-      <button class="btn btn-export" onclick="archiveCurrentQuarter()" style="background:#fef3c7;color:#92400e;">📸 Зафиксировать четверть</button>
-      <button class="btn btn-export" onclick="exportData()">📤 Экспорт JSON</button>
-      <button class="btn btn-export" style="background:#e0e7ff; color:#3730a3;" onclick="generatePDF()">🖨️ Скачать PDF</button>
-      <label class="btn btn-import">📥 Импорт JSON<input type="file" accept=".json" onchange="importData(event)" style="display:none"></label>
-      <button class="btn btn-reset" onclick="resetAll()">🗑️ Сбросить всё</button>
+      <button class="btn btn-export" onclick="archiveCurrentQuarter()" style="background:#fef3c7;color:#92400e;">📸 Зафиксировать</button>
+      <button class="btn btn-export" onclick="exportData()">📤 Экспорт</button>
+      <button class="btn btn-export" style="background:#e0e7ff; color:#3730a3;" onclick="generatePDF()">🖨️ PDF</button>
+      <label class="btn btn-import">📥 Импорт<input type="file" accept=".json" onchange="importData(event)" style="display:none"></label>
+      <button class="btn btn-reset" onclick="resetAll()">🗑️ Сброс</button>
     </div>
     <div id="archiveContent"></div>
   </div>
 
 </div>
 
-<!-- Скрытый блок для печати (вынесен из скрипта) -->
 <div id="print-area" style="display: none;"></div>
 
 <script>
-// ==========================================================
-// 1. БАЗА ДАННЫХ И РАСПИСАНИЕ
-// ==========================================================
 const STORAGE_KEY = "attestat_v4";
 const THEME_KEY = "attestat_theme";
 
@@ -219,7 +244,6 @@ const SUBJECTS = [
   { name: "Черчение", type: "fixed", fixedGrade: 10 },
 ];
 
-// Обычное расписание (0 = Пн, 1 = Вт ... 4 = Пт)
 const SCHEDULE = [
   ["Белорусская литература", "Белорусский язык", "Физическая культура", "Математика", "Математика", "Английский язык"],
   ["Математика", "Математика", "Химия", "Английский язык", "Русский язык", "Русская литература"],
@@ -228,7 +252,6 @@ const SCHEDULE = [
   ["Физика", "Русская литература", "Астрономия", "Биология", "Физическая культура", "Математика"]
 ];
 
-// Расписание на неделю ДМП (9-15 ноября): Пн-Чт по 7 уроков, Пт - 6
 const DMP_SCHEDULE = [
   ["Допризывная и медицинская подготовка", "Допризывная и медицинская подготовка", "Допризывная и медицинская подготовка", "Допризывная и медицинская подготовка", "Допризывная и медицинская подготовка", "Допризывная и медицинская подготовка", "Допризывная и медицинская подготовка"],
   ["Допризывная и медицинская подготовка", "Допризывная и медицинская подготовка", "Допризывная и медицинская подготовка", "Допризывная и медицинская подготовка", "Допризывная и медицинская подготовка", "Допризывная и медицинская подготовка", "Допризывная и медицинская подготовка"],
@@ -237,7 +260,6 @@ const DMP_SCHEDULE = [
   ["Допризывная и медицинская подготовка", "Допризывная и медицинская подготовка", "Допризывная и медицинская подготовка", "Допризывная и медицинская подготовка", "Допризывная и медицинская подготовка", "Допризывная и медицинская подготовка"]
 ];
 
-// Даты четвертей
 const Q_DATES = {
   1: { start: "2026-09-01", end: "2026-10-31" },
   2: { start: "2026-11-09", end: "2026-12-24" },
@@ -257,9 +279,6 @@ const PERIODS = [
   { name: "Летние каникулы", start: "2027-06-01", end: "2027-08-31", type: "holiday" },
 ];
 
-// ==========================================================
-// 2. ГЛОБАЛЬНОЕ СОСТОЯНИЕ
-// ==========================================================
 let data = loadData();
 let currentQuarter = 1;
 let currentWeekStart = null;
@@ -271,9 +290,6 @@ function loadData() {
 }
 function saveData() { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); }
 
-// ==========================================================
-// 3. УТИЛИТЫ ДАТ И ПЕРИОДОВ
-// ==========================================================
 function getMonday(d) {
   d = new Date(d);
   const day = d.getDay();
@@ -292,25 +308,19 @@ function updatePeriodBadge() {
   const badge = document.getElementById('periodBadge');
   const now = new Date();
   now.setHours(0,0,0,0);
-  
   let current = null;
   for (let p of PERIODS) {
     const s = new Date(p.start); const e = new Date(p.end); e.setHours(23,59,59,999);
     if (now >= s && now <= e) { current = p; break; }
   }
-  
   if (!current) {
     if (now < new Date("2026-09-01")) current = { name: "Летние каникулы", type: "holiday" };
     else current = { name: "После учёбы", type: "off" };
   }
-  
   badge.textContent = current.name;
   badge.className = "period-badge " + current.type;
 }
 
-// ==========================================================
-// 4. ПЕРЕКЛЮЧЕНИЕ ВКЛАДОК
-// ==========================================================
 function switchTab(tabId) {
   document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
   document.querySelector(`.nav-tab[onclick="switchTab('${tabId}')"]`).classList.add('active');
@@ -325,25 +335,15 @@ function switchTab(tabId) {
   if (tabId === 'archive') { renderArchive(); }
 }
 
-// ==========================================================
-// 5. РЕНДЕР ДНЕВНИКА
-// ==========================================================
 function selectQuarter(q) {
   currentQuarter = q;
   currentWeekStart = null; 
-  
   document.querySelectorAll('.q-tab').forEach(t => t.classList.toggle('active', parseInt(t.dataset.q) === q));
-  
   const today = new Date();
   const qStart = new Date(Q_DATES[q].start);
   const qEnd = new Date(Q_DATES[q].end);
-  
-  if (today >= qStart && today <= qEnd) {
-    currentWeekStart = getMonday(today);
-  } else {
-    currentWeekStart = getMonday(qStart);
-  }
-  
+  if (today >= qStart && today <= qEnd) { currentWeekStart = getMonday(today); }
+  else { currentWeekStart = getMonday(qStart); }
   renderWeeks();
   renderDiary();
 }
@@ -351,7 +351,6 @@ function selectQuarter(q) {
 function renderWeeks() {
   const container = document.getElementById('weekScroll');
   container.innerHTML = '';
-  
   const start = getMonday(new Date(Q_DATES[currentQuarter].start));
   const end = new Date(Q_DATES[currentQuarter].end);
   let iterDate = new Date(start);
@@ -361,12 +360,10 @@ function renderWeeks() {
     const thisWeekStart = new Date(iterDate);
     const weekEnd = new Date(thisWeekStart);
     weekEnd.setDate(weekEnd.getDate() + 6);
-    
     const btn = document.createElement('button');
     btn.className = 'week-btn';
     if (formatDate(thisWeekStart) === formatDate(currentWeekStart)) btn.classList.add('active');
     if (today >= thisWeekStart && today <= weekEnd) btn.classList.add('current-week');
-    
     btn.textContent = `${formatShortDate(thisWeekStart)} – ${formatShortDate(weekEnd)}`;
     btn.onclick = () => {
       currentWeekStart = new Date(thisWeekStart);
@@ -375,15 +372,11 @@ function renderWeeks() {
       renderDiary();
     };
     container.appendChild(btn);
-    
     iterDate.setDate(iterDate.getDate() + 7);
   }
-  
   setTimeout(() => {
     const activeBtn = container.querySelector('.week-btn.active');
-    if (activeBtn) {
-      container.scrollLeft = activeBtn.offsetLeft - 100;
-    }
+    if (activeBtn) { container.scrollLeft = activeBtn.offsetLeft - 100; }
   }, 10);
 }
 
@@ -423,16 +416,13 @@ function renderDiary() {
       body.innerHTML = '<div style="color:#94a3b8; text-align:center; font-size:12px; margin-top:20px;">Нет учёбы</div>';
     } else {
       let lessons = isDmpWeek ? DMP_SCHEDULE[i] : SCHEDULE[i];
-      
       if (lessons) {
         lessons.forEach((subjName, idx) => {
           const row = document.createElement('div');
           row.className = 'lesson-row';
-          
           const nameLabel = document.createElement('div');
           nameLabel.className = 'lesson-name';
           nameLabel.textContent = subjName;
-          
           const input = document.createElement('input');
           input.className = 'lesson-input';
           input.type = 'text';
@@ -442,15 +432,12 @@ function renderDiary() {
           const val = data._grades[dateStr][idx] || "";
           input.value = val;
           
-          if (val) {
-            input.classList.add(val.includes('/') || val.includes(' ') ? 'dual' : 'has-grade');
-          }
+          if (val) { input.classList.add(val.includes('/') || val.includes(' ') ? 'dual' : 'has-grade'); }
           
           input.addEventListener('input', (e) => {
             const v = e.target.value.trim();
             data._grades[dateStr][idx] = v;
             saveData();
-            
             input.classList.remove('has-grade', 'dual');
             if (v) input.classList.add(v.includes('/') || v.includes(' ') ? 'dual' : 'has-grade');
           });
@@ -461,15 +448,11 @@ function renderDiary() {
         });
       }
     }
-    
     card.appendChild(body);
     grid.appendChild(card);
   }
 }
 
-// ==========================================================
-// 6. МАТЕМАТИКА И РАСЧЁТЫ
-// ==========================================================
 function parseGrades(text) {
   if (!text) return [];
   const cleaned = String(text).replace(/[,;.\/]/g, " ");
@@ -480,7 +463,6 @@ function parseGrades(text) {
   });
   return out;
 }
-
 function avgOf(arr) { if (!arr.length) return null; return arr.reduce((a,b) => a+b, 0) / arr.length; }
 
 function gradesNeededToNextTier(grades) {
@@ -489,10 +471,7 @@ function gradesNeededToNextTier(grades) {
   const sum = grades.reduce((a, b) => a + b, 0);
   const avg = sum / n;
   const currentQ = roundBelarus(avg);
-
-  if (currentQ >= 10) {
-    return { quarter: 10, next: null, needed: 0 };
-  }
+  if (currentQ >= 10) return { quarter: 10, next: null, needed: 0 };
   const nextTier = currentQ + 1;
   const T = nextTier - 0.5; 
   let needed = (T * n - sum) / (10 - T);
@@ -506,7 +485,6 @@ function getGradesForSubject(subjName, qNum) {
   let grades = [];
   const qStart = new Date(Q_DATES[qNum].start);
   const qEnd = new Date(Q_DATES[qNum].end);
-  
   for (const dateStr in data._grades) {
     const d = new Date(dateStr);
     if (d >= qStart && d <= qEnd) {
@@ -515,7 +493,6 @@ function getGradesForSubject(subjName, qNum) {
         const weekStartStr = formatDate(getMonday(d));
         const isDmpWeek = (weekStartStr === "2026-11-09");
         const lessons = isDmpWeek ? DMP_SCHEDULE[dayOfWeek] : SCHEDULE[dayOfWeek];
-        
         if (lessons) {
           lessons.forEach((name, idx) => {
             if (name === subjName) {
@@ -539,7 +516,6 @@ function calcQuarterGrade(subjName, qNum) {
 function calcAnnual(subjName, subjType, fixedGrade) {
   if (subjType === "fixed") return fixedGrade;
   if (subjType === "single_quarter") return calcQuarterGrade(subjName, 2);
-  
   const q = [];
   for (let i = 1; i <= 4; i++) {
     const g = calcQuarterGrade(subjName, i);
@@ -553,7 +529,6 @@ function calcFinal(subjName, subjType, fixedGrade) {
   const annual = calcAnnual(subjName, subjType, fixedGrade);
   if (annual === null) return null;
   if (subjType !== "exam") return annual;
-  
   const examVal = data._exam[subjName];
   const ex = parseInt(examVal, 10);
   if (isNaN(ex) || ex < 1 || ex > 10) return annual;
@@ -570,13 +545,9 @@ function gradeColor(v, onDark = false) {
   return onDark ? `hsl(${hue}, 100%, 78%)` : `hsl(${hue}, 75%, 40%)`;
 }
 
-// ==========================================================
-// 7. ТАБЛИЦА (Вкладка "Итоги")
-// ==========================================================
 function renderTable() {
   const tbody = document.getElementById('tableBody');
   tbody.innerHTML = '';
-  
   const sorted = [...SUBJECTS].sort((a,b) => {
     if (a.type === 'fixed' && b.type !== 'fixed') return 1;
     if (a.type !== 'fixed' && b.type === 'fixed') return -1;
@@ -594,8 +565,7 @@ function renderTable() {
       const tdA = document.createElement('td'); tdA.textContent = '—'; tr.appendChild(tdA);
       const tdE = document.createElement('td'); tdE.textContent = '—'; tr.appendChild(tdE);
       const tdF = document.createElement('td'); tdF.textContent = subj.fixedGrade; tdF.style.color = gradeColor(subj.fixedGrade); tdF.style.fontWeight = '700'; tr.appendChild(tdF);
-    } 
-    else if (subj.type === 'single_quarter') {
+    } else if (subj.type === 'single_quarter') {
       for(let i=1; i<=4; i++){
         const td = document.createElement('td');
         if (i === subj.quarter) { 
@@ -604,50 +574,37 @@ function renderTable() {
             const grades = getGradesForSubject(subj.name, i);
             const avg = avgOf(grades);
             td.innerHTML = `<div style="font-weight:700; font-size:14px; color:${gradeColor(g)};">${g}</div>
-                            <div class="cell-hint">ср. ${avg.toFixed(2)}</div>`;
-          } else {
-            td.textContent = '—';
-          }
-        }
-        else { td.textContent = '—'; }
+                            <div class="cell-hint" style="font-size:10px; color:#94a3b8;">ср. ${avg.toFixed(2)}</div>`;
+          } else { td.textContent = '—'; }
+        } else { td.textContent = '—'; }
         tr.appendChild(td);
       }
-      const tdA = document.createElement('td'); 
-      const a = calcAnnual(subj.name, subj.type); 
-      if (a !== null) {
-        const qGrades = [];
-        for(let i=1; i<=4; i++){ const qg = calcQuarterGrade(subj.name, i); if(qg!==null) qGrades.push(qg); }
-        const annualRaw = qGrades.length ? avgOf(qGrades) : null;
-        tdA.innerHTML = `<div style="font-weight:700; font-size:14px; color:${gradeColor(a)};">${a}</div>
-                         ${annualRaw !== null ? `<div class="cell-hint">ср. ${annualRaw.toFixed(2)}</div>` : ""}`;
-      } else { tdA.textContent = '—'; }
+      const tdA = document.createElement('td'); const a = calcAnnual(subj.name, subj.type); 
+      tdA.innerHTML = a !== null ? `<div style="font-weight:700; font-size:14px; color:${gradeColor(a)};">${a}</div>` : '—';
       tr.appendChild(tdA);
       const tdE = document.createElement('td'); tdE.textContent = '—'; tr.appendChild(tdE);
       const tdF = document.createElement('td'); const f = calcFinal(subj.name, subj.type); tdF.textContent = f !== null ? f : '—'; tdF.style.color = gradeColor(f); tdF.style.fontWeight='700'; tr.appendChild(tdF);
-    } 
-    else {
+    } else {
       for(let i=1; i<=4; i++){
         const td = document.createElement('td');
         const g = calcQuarterGrade(subj.name, i);
         if (g !== null) {
           const grades = getGradesForSubject(subj.name, i);
           const avg = avgOf(grades);
-          td.innerHTML = `<div style="font-weight:700; font-size:14px; color:${gradeColor(g)}; cursor:pointer;" onclick="openSimulator('${subj.name}', ${i})" title="Нажми, чтобы симулировать оценку">${g} 🔮</div>
-                          <div class="cell-hint">ср. ${avg.toFixed(2)}</div>`;
+          td.innerHTML = `<div style="font-weight:700; font-size:14px; color:${gradeColor(g)}; cursor:pointer;" onclick="openSimulator('${subj.name}', ${i})">${g} 🔮</div>
+                          <div class="cell-hint" style="font-size:10px; color:#94a3b8;">ср. ${avg.toFixed(2)}</div>`;
         } else {
           td.innerHTML = `<div style="color:#cbd5e1; cursor:pointer;" onclick="openSimulator('${subj.name}', ${i})">— 🔮</div>`;
         }
         tr.appendChild(td);
       }
-      
-      const tdA = document.createElement('td'); 
-      const a = calcAnnual(subj.name, subj.type); 
+      const tdA = document.createElement('td'); const a = calcAnnual(subj.name, subj.type); 
       if (a !== null) {
         const qGrades = [];
         for(let i=1; i<=4; i++){ const qg = calcQuarterGrade(subj.name, i); if(qg!==null) qGrades.push(qg); }
         const annualRaw = qGrades.length ? avgOf(qGrades) : null;
         tdA.innerHTML = `<div style="font-weight:700; font-size:14px; color:${gradeColor(a)};">${a}</div>
-                         ${annualRaw !== null ? `<div class="cell-hint">ср. ${annualRaw.toFixed(2)}</div>` : ""}`;
+                         ${annualRaw !== null ? `<div class="cell-hint" style="font-size:10px; color:#94a3b8;">ср. ${annualRaw.toFixed(2)}</div>` : ""}`;
       } else { tdA.textContent = '—'; }
       tr.appendChild(tdA);
       
@@ -660,7 +617,6 @@ function renderTable() {
         tdE.appendChild(inp);
       } else { tdE.textContent = '—'; }
       tr.appendChild(tdE);
-      
       const tdF = document.createElement('td'); const f = calcFinal(subj.name, subj.type); tdF.textContent = f !== null ? f : '—'; tdF.style.color = gradeColor(f); tdF.style.fontWeight='700'; tr.appendChild(tdF);
     }
     tbody.appendChild(tr);
@@ -671,28 +627,21 @@ function openSimulator(subjName, qNum) {
   const currentGrades = getGradesForSubject(subjName, qNum);
   const currentAvg = avgOf(currentGrades) || 0;
   const currentQ = roundBelarus(currentAvg) || '—';
-  
   const hypoGrade = prompt(`🔮 Симулятор для "${subjName}" (${qNum} четверть)\n\nСейчас у тебя среднее: ${currentAvg.toFixed(2)} (четвертная: ${currentQ})\n\nВведи оценку, которую хочешь получить (от 1 до 10), чтобы узнать, как изменится балл:`);
-  
   if (hypoGrade && !isNaN(hypoGrade) && hypoGrade >= 1 && hypoGrade <= 10) {
     const newGrades = [...currentGrades, parseInt(hypoGrade)];
     const newAvg = avgOf(newGrades);
     const newQ = roundBelarus(newAvg);
-    
     let diff = newAvg - currentAvg;
     let diffStr = diff > 0 ? `+${diff.toFixed(2)}` : diff.toFixed(2);
-    
     let nextTierMsg = "";
     const nextTier = (typeof currentQ === 'number' ? currentQ + 1 : 1);
     if (newQ > currentQ && nextTier <= 10) {
       nextTierMsg = `\n\n🎉 ПОЗДРАВЛЯЮ! Ты вытянул четвертную до ${newQ}!`;
     } else if (nextTier <= 10) {
       const needed = gradesNeededToNextTier(newGrades);
-      if (needed && needed.needed > 0) {
-         nextTierMsg = `\n\nДо оценки ${nextTier} тебе останется получить ещё ${needed.needed} шт. десяток.`;
-      }
+      if (needed && needed.needed > 0) { nextTierMsg = `\n\nДо оценки ${nextTier} останется ещё ${needed.needed} шт. десяток.`; }
     }
-    
     alert(`Результат с оценкой ${hypoGrade}:\n\nСреднее станет: ${newAvg.toFixed(2)} (${diffStr})\nЧетвертная выйдет: ${newQ}${nextTierMsg}`);
   }
 }
@@ -701,7 +650,6 @@ function updateSummary() {
   const qAvg = [[], [], [], []];
   const annuals = [];
   const finals = [];
-  
   SUBJECTS.forEach(subj => {
     if (subj.type === 'fixed') { finals.push(subj.fixedGrade); return; }
     for(let i=1; i<=4; i++) {
@@ -728,9 +676,6 @@ function updateSummary() {
   `;
 }
 
-// ==========================================================
-// 8. АНАЛИТИКА
-// ==========================================================
 function selectAnalyticsQ(q) {
   currentAnalyticsQ = q;
   document.querySelectorAll('.an-tab').forEach(t => t.classList.toggle('active', String(t.dataset.q) === String(q)));
@@ -740,14 +685,12 @@ function selectAnalyticsQ(q) {
 function renderAnalytics() {
   const body = document.getElementById('analyticsBody');
   if (currentAnalyticsQ === 'compare') { body.innerHTML = renderComparison(); return; }
-  
   const q = currentAnalyticsQ;
   body.innerHTML = `
-    <div class="an-section"><h3>🥧 Распределение всех оценок в ${q} четверти</h3><div id="pieRaw"></div></div>
-    <div class="an-section"><h3>🥧 Распределение четвертных оценок</h3><div id="pieQuarter"></div></div>
-    <div class="an-section"><h3>📊 Средний балл по предметам</h3><div id="barsSubjects"></div></div>
+    <div class="an-section"><h3>🥧 Распределение оценок в ${q} четв.</h3><div id="pieRaw"></div></div>
+    <div class="an-section"><h3>🥧 Четвертные оценки</h3><div id="pieQuarter"></div></div>
+    <div class="an-section"><h3>📊 Средний балл</h3><div id="barsSubjects"></div></div>
   `;
-
   const rawCounts = Array(11).fill(0);
   let totalGrades = 0;
   SUBJECTS.forEach(subj => {
@@ -755,14 +698,12 @@ function renderAnalytics() {
     const gs = getGradesForSubject(subj.name, q);
     gs.forEach(g => { rawCounts[g]++; totalGrades++; });
   });
-  
   const qCounts = Array(11).fill(0);
   SUBJECTS.forEach(subj => {
     if (subj.type === 'fixed') { qCounts[subj.fixedGrade]++; return; }
     const g = calcQuarterGrade(subj.name, q);
     if (g !== null) qCounts[g]++;
   });
-
   const bars = [];
   SUBJECTS.forEach(subj => {
     if (subj.type === 'fixed') return;
@@ -770,10 +711,8 @@ function renderAnalytics() {
     if (gs.length > 0) bars.push({ label: subj.name, value: avgOf(gs) });
   });
   bars.sort((a, b) => a.value - b.value);
-
   drawPie('pieRaw', rawCounts, totalGrades);
   drawPie('pieQuarter', qCounts, qCounts.reduce((a,b)=>a+b,0));
-  
   const barsHtml = bars.map(it => {
     const pct = Math.max(4, (it.value / 10) * 100);
     return `<div class="bar-row"><div class="bar-label">${it.label}</div><div class="bar-track"><div class="bar-fill" style="width:${pct}%; background:${gradeColor(Math.round(it.value))};">${it.value.toFixed(2)}</div></div></div>`;
@@ -784,29 +723,24 @@ function renderAnalytics() {
 function drawPie(containerId, counts, total) {
   const el = document.getElementById(containerId);
   if (total === 0) { el.innerHTML = '<div class="an-empty">Нет оценок</div>'; return; }
-  
   let paths = [];
   let angle = -Math.PI / 2;
   const cx = 110, cy = 110, r = 104;
-  
   for (let g = 1; g <= 10; g++) {
     if (counts[g] === 0) continue;
     const slice = (counts[g] / total) * Math.PI * 2;
-    if (counts[g] === total) {
-      paths.push(`<circle cx="${cx}" cy="${cy}" r="${r}" fill="${gradeColor(g)}" stroke="#fff" stroke-width="2"/>`);
-    } else {
+    if (counts[g] === total) { paths.push(`<circle cx="${cx}" cy="${cy}" r="${r}" fill="${gradeColor(g)}" stroke="#fff" stroke-width="2"/>`); }
+    else {
       const x1 = cx + r * Math.cos(angle), y1 = cy + r * Math.sin(angle);
       const x2 = cx + r * Math.cos(angle + slice), y2 = cy + r * Math.sin(angle + slice);
       paths.push(`<path d="M ${cx} ${cy} L ${x1} ${y1} A ${r} ${r} 0 ${slice > Math.PI ? 1 : 0} 1 ${x2} ${y2} Z" fill="${gradeColor(g)}" stroke="#fff" stroke-width="2"/>`);
       angle += slice;
     }
   }
-
   const legend = [];
   for (let g = 1; g <= 10; g++) {
     if (counts[g] > 0) legend.push(`<div class="pie-legend-item"><span class="pie-dot" style="background:${gradeColor(g)}"></span>Оценка <b>${g}</b>: ${counts[g]} шт</div>`);
   }
-
   el.innerHTML = `<div style="display:flex; gap:20px; align-items:center; flex-wrap:wrap;"><svg width="220" height="220" viewBox="0 0 220 220">${paths.join("")}</svg><div>${legend.join("")}</div></div>`;
 }
 
@@ -821,7 +755,6 @@ function renderComparison() {
     });
     qAvgs.push({ q, avg: gs.length ? avgOf(gs) : null });
   }
-  
   const bars = qAvgs.map(item => {
     const h = item.avg !== null ? (item.avg / 10) * 100 : 0;
     return `<div style="display:flex; flex-direction:column; align-items:center; justify-content:flex-end; height:150px; flex:1;">
@@ -830,13 +763,9 @@ function renderComparison() {
       <div style="margin-top:6px; font-size:12px; font-weight:600; color:#64748b;">${item.q} четв.</div>
     </div>`;
   }).join("");
-
   return `<div class="an-section"><h3>📊 Средний балл по четвертям</h3><div style="display:flex; gap:16px; align-items:flex-end; height:180px; padding:0 12px;">${bars}</div></div>`;
 }
 
-// ==========================================================
-// 9. АРХИВ И НАСТРОЙКИ
-// ==========================================================
 function archiveCurrentQuarter() {
   const q = currentQuarter;
   const snapshot = {};
@@ -846,7 +775,6 @@ function archiveCurrentQuarter() {
     if (g !== null) snapshot[subj.name] = g;
   });
   if (Object.keys(snapshot).length === 0) { alert("Нет оценок в этой четверти."); return; }
-  
   if (!data._archive) data._archive = {};
   data._archive["Q" + q] = { ts: Date.now(), snapshot };
   saveData();
@@ -859,7 +787,6 @@ function renderArchive() {
   const arch = data._archive || {};
   const keys = Object.keys(arch).sort();
   if (!keys.length) { el.innerHTML = '<div class="an-empty">Архив пуст</div>'; return; }
-  
   el.innerHTML = keys.map(k => {
     const a = arch[k];
     const date = new Date(a.ts).toLocaleString("ru-RU");
@@ -904,9 +831,6 @@ function resetAll() {
   alert("Всё сброшено");
 }
 
-// ==========================================================
-// 10. ИНИЦИАЛИЗАЦИЯ
-// ==========================================================
 function toggleTheme() {
   const isDark = document.body.classList.toggle('dark');
   localStorage.setItem(THEME_KEY, isDark ? 'dark' : 'light');
@@ -918,31 +842,23 @@ function init() {
     document.body.classList.add('dark');
     document.getElementById('themeToggle').textContent = '☀️';
   }
-  
   document.getElementById('datetime').textContent = new Date().toLocaleString("ru-RU", { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute:'2-digit' });
   updatePeriodBadge();
-  
   const today = formatDate(new Date());
   let defaultQ = 1;
   if (today >= "2026-11-09") defaultQ = 2;
   if (today >= "2027-01-11") defaultQ = 3;
   if (today >= "2027-03-29") defaultQ = 4;
-  
   selectQuarter(defaultQ);
 }
 
 init();
 
-// ==========================================================
-// 11. PDF
-// ==========================================================
 function generatePDF() {
   const printArea = document.getElementById('print-area');
   const today = new Date().toLocaleDateString('ru-RU');
-  
   let rows = '';
   const sorted = [...SUBJECTS].sort((a,b) => a.name.localeCompare(b.name, "ru"));
-  
   sorted.forEach(subj => {
     let qGrades = [];
     for(let i=1; i<=4; i++) {
@@ -951,7 +867,6 @@ function generatePDF() {
     }
     const annual = calcAnnual(subj.name, subj.type) || '—';
     const final = calcFinal(subj.name, subj.type) || '—';
-    
     rows += `<tr>
       <td style="text-align: left;">${subj.name}</td>
       <td>${qGrades[0]}</td><td>${qGrades[1]}</td><td>${qGrades[2]}</td><td>${qGrades[3]}</td>
@@ -959,7 +874,6 @@ function generatePDF() {
       <td><b>${final}</b></td>
     </tr>`;
   });
-
   printArea.innerHTML = `
     <div class="print-header">
       <h2>📊 Табель успеваемости</h2>
@@ -968,26 +882,16 @@ function generatePDF() {
     <table class="print-table">
       <thead>
         <tr>
-          <th>Предмет</th>
-          <th>1 четв.</th>
-          <th>2 четв.</th>
-          <th>3 четв.</th>
-          <th>4 четв.</th>
-          <th>Годовая</th>
-          <th>Итоговая</th>
+          <th>Предмет</th><th>1 четв.</th><th>2 четв.</th><th>3 четв.</th><th>4 четв.</th><th>Годовая</th><th>Итоговая</th>
         </tr>
       </thead>
-      <tbody>
-        ${rows}
-      </tbody>
+      <tbody>${rows}</tbody>
     </table>
-    <div class="print-footer">
-      Сгенерировано в электронном дневнике.
-    </div>
+    <div class="print-footer">Сгенерировано в электронном дневнике.</div>
   `;
-  
   setTimeout(() => { window.print(); }, 100);
 }
+
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
     navigator.serviceWorker.register("./sw.js")
